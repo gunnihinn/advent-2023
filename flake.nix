@@ -10,7 +10,8 @@
     flake-utils.lib.eachDefaultSystem (system:
       let pkgs = import nixpkgs { inherit system; };
       in {
-        devShell =
-          pkgs.mkShell { buildInputs = with pkgs; [ clang cmake ninja ]; };
+        devShell = pkgs.mkShell.override { stdenv = pkgs.clangStdenv; } rec {
+          nativeBuildInputs = with pkgs; [ clang cmake ninja ];
+        };
       });
 }
