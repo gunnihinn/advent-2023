@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.27)
 
 project(Advent)
 
-#set(CMAKE_C_COMPILER clang)
-#set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_compile_options(-Wall -Wextra -g3)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -14,4 +14,5 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+add_subdirectory(fuzztest)
 add_subdirectory(src)

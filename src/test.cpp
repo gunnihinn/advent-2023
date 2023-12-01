@@ -1,3 +1,4 @@
+#include <fuzztest/fuzztest.h>
 #include <gtest/gtest.h>
 
 #include "advent.h"
@@ -12,3 +13,9 @@ TEST(HelloTest, Advent)
 {
 	EXPECT_NO_THROW(advent::hello());
 }
+
+void AdditionCommutes(int a, int b)
+{
+	EXPECT_EQ(a + b, b + a);
+}
+FUZZ_TEST(HelloTest, AdditionCommutes);

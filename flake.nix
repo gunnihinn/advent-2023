@@ -11,7 +11,7 @@
       let pkgs = import nixpkgs { inherit system; };
       in {
         devShell = pkgs.mkShell.override { stdenv = pkgs.clangStdenv; } rec {
-          nativeBuildInputs = with pkgs; [ clang cmake ninja ];
+          nativeBuildInputs = with pkgs; [ clang cmake ninja gdb ];
         };
       });
 }
