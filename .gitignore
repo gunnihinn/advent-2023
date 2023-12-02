@@ -2,3 +2,5 @@
 build/
 dist/
 fuzztest/
+.idea/
+cmake-*/
