@@ -2,26 +2,44 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <regex>
 
 int64_t partA(char* filename)
 {
 	std::ifstream input(filename);
 	std::string line;
 
-	int64_t sum = 0;
-	while (std::getline(input, line)) {
-		int64_t first = -1;
-		int64_t last = -1;
-		for (auto c : line) {
-			if ('0' <= c && c <= '9') {
-				if (first < 0) {
-					first = c - '0';
-				}
-				last = c - '0';
-			}
-		}
+    std::regex re_game("Game (\\d+): (.*)");
+    std::regex re_red("(\\d+) red");
+    std::regex re_green("(\\d+) green");
+    std::regex re_blue("(\\d+) blue");
 
-		sum += first * 10 + last;
+    int max_red = 12;
+    int max_green = 13;
+    int max_blue = 14;
+
+    auto color_ok = [](std::string line, std::regex re, int max) {
+        std::smatch match;
+        while (std::regex_search(line, match, re)) {
+            if (std::stoi(match[1].str()) > max) {
+                return false;
+            }
+            line = match.suffix();
+        }
+        return true;
+    };
+
+    int sum = 0;
+	while (std::getline(input, line)) {
+        auto game_begin = std::sregex_iterator(line.begin(), line.end(), re_game);
+        const auto& game_match = *game_begin;
+        int nr = std::stoi(game_match[1] );
+
+        std::string colors = game_match[2].str();
+        if ( color_ok(colors, re_red, max_red) && color_ok(colors, re_green, max_green) && color_ok(colors, re_blue, max_blue))
+        {
+            sum += nr;
+        }
 	}
 
 	return sum;
@@ -29,73 +47,41 @@ int64_t partA(char* filename)
 
 int64_t partB(char* filename)
 {
-	std::ifstream input(filename);
-	std::string line;
+    std::ifstream input(filename);
+    std::string line;
 
-	int64_t sum = 0;
-	while (std::getline(input, line)) {
-		int64_t first = -1;
-		int64_t last = -1;
-		size_t pos = 0;
-		while (pos < line.size()) {
-			if ('0' <= line[pos] && line[pos] <= '9') {
-				if (first < 0) {
-					first = line[pos] - '0';
-				}
-				last = line[pos] - '0';
-			} else if (pos == line.find("one", pos)) {
-				if (first < 0) {
-					first = 1;
-				}
-				last = 1;
-			} else if (pos == line.find("two", pos)) {
-				if (first < 0) {
-					first = 2;
-				}
-				last = 2;
-			} else if (pos == line.find("three", pos)) {
-				if (first < 0) {
-					first = 3;
-				}
-				last = 3;
-			} else if (pos == line.find("four", pos)) {
-				if (first < 0) {
-					first = 4;
-				}
-				last = 4;
-			} else if (pos == line.find("five", pos)) {
-				if (first < 0) {
-					first = 5;
-				}
-				last = 5;
-			} else if (pos == line.find("six", pos)) {
-				if (first < 0) {
-					first = 6;
-				}
-				last = 6;
-			} else if (pos == line.find("seven", pos)) {
-				if (first < 0) {
-					first = 7;
-				}
-				last = 7;
-			} else if (pos == line.find("eight", pos)) {
-				if (first < 0) {
-					first = 8;
-				}
-				last = 8;
-			} else if (pos == line.find("nine", pos)) {
-				if (first < 0) {
-					first = 9;
-				}
-				last = 9;
-			}
-			pos += 1;
-		}
+    std::regex re_game("Game (\\d+): (.*)");
+    std::regex re_red("(\\d+) red");
+    std::regex re_green("(\\d+) green");
+    std::regex re_blue("(\\d+) blue");
 
-		sum += first * 10 + last;
-	}
+    auto color_max = [](std::string line, std::regex re) {
+        std::smatch match;
+        int max = 0;
+        while (std::regex_search(line, match, re)) {
+            int got = std::stoi(match[1].str());
+            if (got > max) {
+                max = got;
+            }
+            line = match.suffix();
+        }
+        return max;
+    };
 
-	return sum;
+    int sum = 0;
+    while (std::getline(input, line)) {
+        auto game_begin = std::sregex_iterator(line.begin(), line.end(), re_game);
+        const auto& game_match = *game_begin;
+        int nr = std::stoi(game_match[1] );
+
+        std::string colors = game_match[2].str();
+        int min_red = color_max(colors, re_red);
+        int min_green = color_max(colors, re_green);
+        int min_blue = color_max(colors, re_blue);
+        sum += min_red * min_green * min_blue;
+    }
+
+    return sum;
 }
 
 int main(int argc, char** argv)

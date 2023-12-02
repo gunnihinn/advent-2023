@@ -4,6 +4,7 @@ add_subdirectory(advent)
 include_directories(advent)
 
 add_subdirectory(01)
+add_subdirectory(02)
 
 add_executable(hello advent main.cpp)
 add_executable(test.hello advent test.cpp)
