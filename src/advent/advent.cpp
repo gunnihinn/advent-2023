@@ -2,9 +2,10 @@
 
 #include <iostream>
 
-namespace advent {
+namespace advent
+{
 void hello()
 {
-	std::cout << "Hello\n";
+    std::cout << "Hello\n";
 }
 }
