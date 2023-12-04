@@ -8,83 +8,83 @@
 
 class Input {
 public:
-    Input(std::set<int64_t> winning, std::set<int64_t> have) : winning{std::move(winning)}, have{have} {};
+    Input(std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t >> nr_line_coords,
+          std::set<std::pair<int64_t, int64_t> > symbols) : nr_line_coords{std::move(nr_line_coords)},
+                                                            symbols{std::move(symbols)} {};
 
-    std::set<int64_t> winning;
-    std::set<int64_t> have;
+    std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t >> nr_line_coords;
+    std::set<std::pair<int64_t, int64_t> > symbols;
 };
 
-std::vector<Input> parse(char *filename) {
-    std::vector<Input> inputs;
+Input parse(char *filename) {
+    std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t >> nr_line_coords;
+    std::set<std::pair<int64_t, int64_t> > symbols;
 
     std::ifstream input(filename);
     std::string line;
-
     std::regex re_nr("(\\d+)");
-    auto nrs = [re_nr](std::string line) {
-        std::set<int64_t> ns;
-        auto begin = std::sregex_iterator(line.begin(), line.end(), re_nr);
-        auto end = std::sregex_iterator();
-        for (std::sregex_iterator it = begin; it != end; ++it) {
-            ns.insert(std::stoi(it->str()));
-        }
-        return ns;
-    };
+    std::regex re_symbol("([^0-9\\.])");
 
+    int64_t line_nr = 0;
     while (std::getline(input, line)) {
-        size_t col = line.find(":");
-        size_t pipe = line.find("|");
-        std::string winning = line.substr(col + 1, pipe - col - 1);
-        std::string have = line.substr(pipe + 1, line.length() - pipe);
-        inputs.emplace_back(nrs(winning), nrs(have));
+        for (std::sregex_iterator it = std::sregex_iterator(line.begin(), line.end(), re_nr);
+             it != std::sregex_iterator(); ++it) {
+            auto nr = std::stoi(it->str());
+            nr_line_coords.emplace_back(nr, line_nr, it->position(), it->position() + it->length() - 1);
+        }
+
+        for (std::sregex_iterator it = std::sregex_iterator(line.begin(), line.end(), re_symbol);
+             it != std::sregex_iterator(); ++it) {
+            symbols.insert({line_nr, it->position()});
+        }
+
+        line_nr++;
     }
 
-    return inputs;
+    return Input(nr_line_coords, symbols);
 }
 
 int64_t partA(char *filename) {
-    int64_t sum = 0;
-    auto inputs = parse(filename);
-    for (auto input: inputs) {
-        int64_t cnt = 0;
-        for (auto have: input.have) {
-            if (auto ok = input.winning.find(have); ok != input.winning.end()) {
-                cnt++;
+    auto input = parse(filename);
+
+    auto is_part_nr = [&input](const std::tuple<int64_t, int64_t, int64_t, int64_t> &coords) {
+        const auto [nr, line, begin, end] = coords;
+
+        for (int64_t pos = begin - 1; pos <= end + 1; pos++) {
+            if (input.symbols.find({line - 1, pos}) != input.symbols.end()) {
+                return true;
             }
         }
-        if (cnt > 0) {
-            sum += 1 << (cnt - 1);
+
+        if (input.symbols.find({line, begin - 1}) != input.symbols.end()) {
+            return true;
+        }
+
+        if (input.symbols.find({line, end + 1}) != input.symbols.end()) {
+            return true;
+        }
+
+        for (int64_t pos = begin - 1; pos <= end + 1; pos++) {
+            if (input.symbols.find({line + 1, pos}) != input.symbols.end()) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    int64_t sum = 0;
+    for (const auto &kv: input.nr_line_coords) {
+        if (is_part_nr(kv)) {
+            sum += std::get<0>(kv);
         }
     }
+
     return sum;
 }
 
 int64_t partB(char *filename) {
-    auto inputs = parse(filename);
-
-    std::map<uint64_t, uint64_t> card_to_count;
-    for (size_t i = 0; i < inputs.size(); i++) {
-        card_to_count[i] = 1;
-    }
-
-    for (size_t i = 0; i < inputs.size(); i++) {
-        auto input = inputs[i];
-        int64_t cnt = 0;
-        for (auto have: input.have) {
-            if (auto ok = input.winning.find(have); ok != input.winning.end()) {
-                cnt++;
-            }
-        }
-        for (size_t j = i + 1; j < std::min(i + 1 + cnt, inputs.size()); j++) {
-            card_to_count[j] += card_to_count[i];
-        }
-    }
-
     int64_t sum = 0;
-    for (auto kv : card_to_count)
-    {
-        sum += kv.second;
-    }
     return sum;
 }
 
