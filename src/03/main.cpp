@@ -9,16 +9,16 @@
 class Input {
 public:
     Input(std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t >> nr_line_coords,
-          std::set<std::pair<int64_t, int64_t> > symbols) : nr_line_coords{std::move(nr_line_coords)},
-                                                            symbols{std::move(symbols)} {};
+          std::map<std::pair<int64_t, int64_t>, std::string> symbols) : nr_line_coords{std::move(nr_line_coords)},
+                                                                        symbols{std::move(symbols)} {};
 
     std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t >> nr_line_coords;
-    std::set<std::pair<int64_t, int64_t> > symbols;
+    std::map<std::pair<int64_t, int64_t>, std::string> symbols;
 };
 
 Input parse(char *filename) {
     std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t >> nr_line_coords;
-    std::set<std::pair<int64_t, int64_t> > symbols;
+    std::map<std::pair<int64_t, int64_t>, std::string> symbols;
 
     std::ifstream input(filename);
     std::string line;
@@ -35,7 +35,7 @@ Input parse(char *filename) {
 
         for (std::sregex_iterator it = std::sregex_iterator(line.begin(), line.end(), re_symbol);
              it != std::sregex_iterator(); ++it) {
-            symbols.insert({line_nr, it->position()});
+            symbols[{line_nr, it->position()}] = it->str();
         }
 
         line_nr++;
@@ -84,7 +84,31 @@ int64_t partA(char *filename) {
 }
 
 int64_t partB(char *filename) {
+    auto input = parse(filename);
+
+    auto neighbors = [&input](const std::pair<int64_t, int64_t> &symbol) {
+        const auto [s_line, s_col] = symbol;
+
+        std::vector<int64_t> nbs;
+        for (const auto [nr, line, begin, end]: input.nr_line_coords) {
+            if (std::abs(s_line - line) <= 1 && (begin - 1 <= s_col && s_col <= end + 1)) {
+                nbs.push_back(nr);
+            }
+        }
+
+        return nbs;
+    };
+
+
     int64_t sum = 0;
+    for (auto symbol: input.symbols) {
+        if (symbol.second == "*") {
+            auto nbs = neighbors(symbol.first);
+            if (nbs.size() == 2) {
+                sum += nbs[0] * nbs[1];
+            }
+        }
+    }
     return sum;
 }
 
