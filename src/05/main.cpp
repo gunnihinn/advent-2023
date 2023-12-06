@@ -6,86 +6,113 @@
 #include <set>
 #include <utility>
 
-class Input {
+class Map {
 public:
-    Input(std::set<int64_t> winning, std::set<int64_t> have) : winning{std::move(winning)}, have{have} {};
-
-    std::set<int64_t> winning;
-    std::set<int64_t> have;
-};
-
-std::vector<Input> parse(char *filename) {
-    std::vector<Input> inputs;
-
-    std::ifstream input(filename);
-    std::string line;
-
-    std::regex re_nr("(\\d+)");
-    auto nrs = [re_nr](std::string line) {
-        std::set<int64_t> ns;
-        auto begin = std::sregex_iterator(line.begin(), line.end(), re_nr);
-        auto end = std::sregex_iterator();
-        for (std::sregex_iterator it = begin; it != end; ++it) {
-            ns.insert(std::stoi(it->str()));
-        }
-        return ns;
+    class Range {
+    public:
+        int64_t src_start{0};
+        int64_t dst_start{0};
+        int64_t range{0};
     };
 
-    while (std::getline(input, line)) {
-        size_t col = line.find(":");
-        size_t pipe = line.find("|");
-        std::string winning = line.substr(col + 1, pipe - col - 1);
-        std::string have = line.substr(pipe + 1, line.length() - pipe);
-        inputs.emplace_back(nrs(winning), nrs(have));
+    int64_t map(int64_t n) const {
+        for (auto range: ranges) {
+            if (range.src_start <= n && n <= range.src_start + range.range) {
+                return n - range.src_start + range.dst_start;
+            }
+        }
+        return n;
     }
 
-    return inputs;
+    void add(int64_t src, int64_t dst, int64_t range) {
+        ranges.emplace_back(src, dst, range);
+    }
+
+    bool empty() {
+        return ranges.empty();
+    }
+
+private:
+    std::vector<Range> ranges;
+};
+
+
+class Input {
+public:
+    std::vector<int64_t> seeds;
+    std::vector<Map> maps;
+};
+
+Input parse(char *filename) {
+    Input input;
+
+    std::ifstream fh(filename);
+    std::string line;
+    std::regex re("\\d+");
+
+    std::getline(fh, line); // seeds
+    for (auto it = std::sregex_iterator(line.begin(), line.end(), re); it != std::sregex_iterator(); ++it) {
+        input.seeds.push_back(std::stol(it->str()));
+    }
+
+    Map map;
+    while (std::getline(fh, line)) {
+        if (line.empty()) {
+            if (!map.empty()) {
+                input.maps.push_back(map);
+            }
+            map = Map();
+        } else if (std::string::npos != line.find("map")) {
+            // skip
+        } else {
+            std::vector<int64_t> ints;
+            for (auto it = std::sregex_iterator(line.begin(), line.end(), re); it != std::sregex_iterator(); ++it) {
+                ints.push_back(std::stol(it->str()));
+            }
+            map.add(ints[1], ints[0], ints[2]);
+        }
+    }
+
+    if (!map.empty()) {
+        input.maps.push_back(map);
+    }
+
+    return input;
+}
+
+int64_t run(int64_t seed, const std::vector<Map>& maps)
+{
+    for (const auto& map: maps) {
+        seed = map.map(seed);
+    }
+    return seed;
 }
 
 int64_t partA(char *filename) {
-    int64_t sum = 0;
     auto inputs = parse(filename);
-    for (auto input: inputs) {
-        int64_t cnt = 0;
-        for (auto have: input.have) {
-            if (auto ok = input.winning.find(have); ok != input.winning.end()) {
-                cnt++;
-            }
-        }
-        if (cnt > 0) {
-            sum += 1 << (cnt - 1);
-        }
+    std::vector<int64_t> finals;
+    for (int64_t seed: inputs.seeds) {
+        finals.push_back(run(seed, inputs.maps));
     }
-    return sum;
+
+    auto result = std::min_element(finals.begin(), finals.end());
+    return *result;
 }
+
 
 int64_t partB(char *filename) {
     auto inputs = parse(filename);
 
-    std::map<uint64_t, uint64_t> card_to_count;
-    for (size_t i = 0; i < inputs.size(); i++) {
-        card_to_count[i] = 1;
-    }
-
-    for (size_t i = 0; i < inputs.size(); i++) {
-        auto input = inputs[i];
-        int64_t cnt = 0;
-        for (auto have: input.have) {
-            if (auto ok = input.winning.find(have); ok != input.winning.end()) {
-                cnt++;
-            }
-        }
-        for (size_t j = i + 1; j < std::min(i + 1 + cnt, inputs.size()); j++) {
-            card_to_count[j] += card_to_count[i];
+    int64_t result = run(inputs.seeds[0], inputs.maps);
+    for (size_t i = 0; i < inputs.seeds.size() / 2; i++) {
+        int64_t seed = inputs.seeds[2 * i];
+        std::cout << "seed=" << seed << "\n";
+        for (int64_t j = 0; j < inputs.seeds[2 * i + 1]; j++) {
+            result = std::min(result, run(seed + j, inputs.maps));
         }
     }
 
-    int64_t sum = 0;
-    for (auto kv : card_to_count)
-    {
-        sum += kv.second;
-    }
-    return sum;
+    return result;
 }
 
 int main(int argc, char **argv) {

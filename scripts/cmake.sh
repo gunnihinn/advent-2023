@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-cmake -B build -G Ninja
+cmake -DCMAKE_BUILD_TYPE=Release -B build -G Ninja
